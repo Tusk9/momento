@@ -1,0 +1,6 @@
+[project]
+name = "momento"
+version = "0.1.0"
+description = "A travel planner memory agent with cross-session memory"
+requires-python = ">=3.11"
+dependencies = []
