@@ -6,4 +6,5 @@ requires-python = ">=3.11"
 dependencies = [
     "openai>=2.44.0",
     "python-dotenv>=1.2.2",
+    "sqlite-vec>=0.1.9",
 ]
