@@ -94,7 +94,9 @@ class MemoryRecord:
     id: str = field(default_factory=_new_id)
     subject: str | None = None                   # the place/entity this is about ("Kyoto"); None = about the user
     user_id: str = "default"                     # multi-user ready, single user for the demo
-
+    lat: float | None = None                     # map coordinates, for POI-type facts
+    lon: float | None = None
+    
     # retrieval
     embedding: list[float] | None = None         # filled by the store on add()
 

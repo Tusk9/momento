@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "A travel planner memory agent with cross-session memory"
 requires-python = ">=3.11"
 dependencies = [
+    "flask>=3.1.3",
     "openai>=2.44.0",
     "python-dotenv>=1.2.2",
     "sqlite-vec>=0.1.9",

@@ -220,7 +220,8 @@ class Agent:
         events: list[ReconciliationEvent] = []
         try:
             data = self.backend.complete_json(_extract_prompt(text), fast=False, temperature=0.0)
-        except Exception:
+        except Exception as e:
+            print(f"[extract] FAILED to parse durable-fact JSON: {e}")
             return learned, events
         for f in data.get("facts", []) or []:
             ftype = _EXTRACT_FACT_TYPES.get(str(f.get("type", "")).strip().lower())

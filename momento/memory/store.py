@@ -35,7 +35,9 @@ class MemoryStore:
         path = db_path or DB_PATH
         if path != ":memory:":
             Path(path).parent.mkdir(parents=True, exist_ok=True)
-        self.db = sqlite3.connect(path)
+        # check_same_thread=False: Flask serves each request on a different
+        # thread; demo traffic is sequential so this is safe here.
+        self.db = sqlite3.connect(path, check_same_thread=False)
         self.db.row_factory = sqlite3.Row
         self.db.enable_load_extension(True)
         sqlite_vec.load(self.db)

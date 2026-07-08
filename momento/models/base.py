@@ -2,6 +2,7 @@
 agent never knows whether it's talking to local Ollama or Qwen Cloud."""
 from abc import ABC, abstractmethod
 import json
+import re
 
 
 class LLMBackend(ABC):
@@ -34,9 +35,10 @@ class LLMBackend(ABC):
 
 
 def _parse_json(raw: str) -> dict:
-    """Models sometimes wrap JSON in ```json fences or add stray prose.
-    Strip fences, then fall back to grabbing the outermost braces."""
-    text = raw.strip()
+    """Models sometimes wrap JSON in ```json fences, <think> blocks, or stray
+    prose. Strip those, then fall back to grabbing the outermost braces."""
+    import re
+    text = re.sub(r"<think>.*?</think>", "", raw, flags=re.DOTALL).strip() 
     if text.startswith("```"):
         text = text.split("```", 2)[1]
         if text.startswith("json"):

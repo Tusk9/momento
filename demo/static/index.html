@@ -1,0 +1,124 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8"><title>momento — travel memory agent</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>
+  body { margin:0; font-family:-apple-system,system-ui,sans-serif; display:grid;
+         grid-template-columns: 1fr 380px; grid-template-rows: 52px 1fr 210px; height:100vh; }
+  header { grid-column:1/3; background:#1a1a2e; color:#fff; display:flex; align-items:center;
+           gap:14px; padding:0 16px; }
+  header h1 { font-size:18px; margin:0; } header .backend { opacity:.7; font-size:12px; }
+  header button { background:#e94560; color:#fff; border:0; padding:7px 12px; border-radius:6px;
+                  cursor:pointer; font-size:13px; }
+  header button.secondary { background:#444; }
+  #map { grid-row:2/4; }
+  #side { grid-row:2; overflow-y:auto; border-left:1px solid #ddd; padding:10px; font-size:13px; }
+  #chat { grid-row:3; border-left:1px solid #ddd; border-top:1px solid #ddd; display:flex;
+          flex-direction:column; }
+  #log { flex:1; overflow-y:auto; padding:8px; font-size:13px; }
+  #log .u { color:#1a1a2e; font-weight:600; margin-top:6px; }
+  #log .a { color:#333; white-space:pre-wrap; }
+  #log .ev { color:#b23; font-weight:600; background:#fdeaea; padding:4px 6px; border-radius:5px;
+             margin:4px 0; }
+  #log .meta { color:#888; font-size:11px; }
+  #inp { display:flex; border-top:1px solid #eee; }
+  #inp input { flex:1; border:0; padding:10px; font-size:14px; outline:none; }
+  #inp button { border:0; background:#1a1a2e; color:#fff; padding:0 16px; cursor:pointer; }
+  .visa { padding:8px 10px; border-radius:8px; margin-bottom:10px; font-weight:600; }
+  .visa.ok { background:#e8f6ee; color:#1e7a46; } .visa.changed { background:#fdeaea; color:#b23; }
+  .mem { padding:6px 8px; border-radius:6px; margin-bottom:6px; background:#f5f6fa; }
+  .mem .t { font-size:11px; font-weight:700; text-transform:uppercase; }
+  .mem.hot .t{color:#e94560} .mem.warm .t{color:#3273dc} .mem.cold{opacity:.45}
+  .mem.cold .txt{text-decoration:line-through}
+</style>
+</head>
+<body>
+<header>
+  <h1>momento</h1><span class="backend" id="backend"></span>
+  <span style="flex:1"></span>
+  <button class="secondary" onclick="newSession()">New session</button>
+  <button onclick="injectChange()">⚡ Inject fact change (pipeline)</button>
+</header>
+<div id="map"></div>
+<div id="side"><div id="visa"></div><div id="mems"></div></div>
+<div id="chat">
+  <div id="log"><div class="meta">Session 1 — say hello, plan a Kyoto trip, state a preference…</div></div>
+  <div id="inp"><input id="text" placeholder="Message momento…"
+       onkeydown="if(event.key==='Enter')send()"/><button onclick="send()">Send</button></div>
+</div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const map = L.map('map').setView([35.005, 135.755], 13);
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+            {attribution:'© OpenStreetMap'}).addTo(map);
+let markers = [];
+const colors = {hot:'#e94560', warm:'#3273dc', cold:'#999'};
+
+async function refresh() {
+  const d = await (await fetch('/api/memories')).json();
+  document.getElementById('backend').textContent = 'backend: ' + d.backend;
+  markers.forEach(m => map.removeLayer(m)); markers = [];
+  const memsDiv = document.getElementById('mems'); memsDiv.innerHTML = '';
+  let visaHtml = '';
+  for (const m of d.memories) {
+    if (m.lat && m.active) {
+      const mk = L.circleMarker([m.lat, m.lon], {radius:9, color:colors[m.tier]||'#999',
+        fillColor:colors[m.tier]||'#999', fillOpacity:.85});
+      mk.bindPopup(`<b>${m.tier.toUpperCase()}</b> score ${m.score} · hits ${m.hit_count}` +
+                   `<br>${m.text}<br><small>source: ${m.source||'—'}</small>`);
+      mk.addTo(map); markers.push(mk);
+    }
+    if (m.fact_type === 'visa_rule') {
+      if (m.active) visaHtml = `<div class="visa ${m.text.includes('eVisa')?'changed':'ok'}">
+        ENTRY · ${m.text}</div>` + visaHtml;
+      else visaHtml += `<div class="visa" style="opacity:.5;text-decoration:line-through">
+        ${m.text}</div>`;
+    }
+    const el = document.createElement('div');
+    el.className = 'mem ' + m.tier;
+    el.innerHTML = `<div class="t">${m.tier} · ${m.fact_type} · score ${m.score}` +
+      ` · hits ${m.hit_count}${m.active?'':' · RETIRED'}</div><div class="txt">${m.text}</div>`;
+    memsDiv.appendChild(el);
+  }
+  document.getElementById('visa').innerHTML = visaHtml;
+}
+
+function logAdd(cls, html) {
+  const el = document.createElement('div'); el.className = cls; el.innerHTML = html;
+  const log = document.getElementById('log'); log.appendChild(el); log.scrollTop = log.scrollHeight;
+}
+
+async function send() {
+  const box = document.getElementById('text'); const text = box.value.trim();
+  if (!text) return; box.value = '';
+  logAdd('u', 'you: ' + text);
+  logAdd('meta', 'thinking…');
+  const r = await (await fetch('/api/turn', {method:'POST',
+    headers:{'Content-Type':'application/json'}, body: JSON.stringify({text})})).json();
+  document.querySelectorAll('#log .meta:last-child').forEach(e=>e.remove());
+  for (const ev of r.events) logAdd('ev', '🧠 ' + ev);
+  logAdd('a', r.reply);
+  logAdd('meta', `intent=${r.intent} · prefetched ${r.prefetch.buffer} mem (~${r.prefetch.tokens} tok)` +
+    ` · predicted next: ${r.prefetch.predicted.join(', ')}` +
+    (r.prefetch.prediction_hit===true ? ' · ✅ predicted!' : '') +
+    (r.prefetch.fallback ? ' · fallback used' : '') +
+    (r.learned.length ? ' · 📌 learned: ' + r.learned.join(' | ') : ''));
+  refresh();
+}
+
+async function newSession() {
+  await fetch('/api/new_session', {method:'POST'});
+  logAdd('meta', '——— new session (transcript cleared, memory persists) ———');
+}
+
+async function injectChange() {
+  const r = await (await fetch('/api/inject_visa_change', {method:'POST'})).json();
+  logAdd('ev', '⚡ pipeline: ' + r.caption);
+  refresh();
+}
+
+refresh();
+</script>
+</body>
+</html>
