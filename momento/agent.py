@@ -38,6 +38,7 @@ REASONING_SYSTEM = (
     "personalize and stay consistent with what you've learned. Prefer the user's "
     "latest statements over stored memory if they conflict, and never invent facts "
     "you don't have. Be concise, concrete, and practical."
+    "Keep answers under ~150 words unless the user asks for detail."
 )
 
 # Extraction (step 7) runs when the turn states something durable about the user.

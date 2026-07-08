@@ -29,23 +29,23 @@ ADVISORY = "https://travel.state.gov/content/travel/en/international-travel/Inte
 
 POIS = [
     ("Nishiki Market is a covered food street in central Kyoto with 100+ stalls.",
-     35.0050, 135.7649, ["dining", "attractions"]),
+     35.0050, 135.7649, ["dining", "attractions", "trip_framing"]),
     ("Gion is Kyoto's historic geisha district with preserved machiya townhouses.",
-     35.0037, 135.7752, ["attractions", "accommodation"]),
+     35.0037, 135.7752, ["attractions", "accommodation","trip_framing"]),
     ("Fushimi Inari Taisha is famous for thousands of vermilion torii gates.",
-     34.9671, 135.7727, ["attractions", "itinerary"]),
+     34.9671, 135.7727, ["attractions", "itinerary","trip_framing"]),
     ("Kinkaku-ji (Golden Pavilion) is a Zen temple covered in gold leaf.",
-     35.0394, 135.7292, ["attractions", "itinerary"]),
+     35.0394, 135.7292, ["attractions", "itinerary","trip_framing"]),
     ("Arashiyama has a famous bamboo grove and riverside walks, best early morning.",
-     35.0094, 135.6668, ["attractions", "itinerary"]),
+     35.0094, 135.6668, ["attractions", "itinerary","trip_framing"]),
     ("Downtown Kawaramachi is central and well-connected — a practical base to stay.",
-     35.0031, 135.7686, ["accommodation"]),
+     35.0031, 135.7686, ["accommodation","trip_framing"]),
 ]
 
 for text, lat, lon, intents in POIS:
     store.add(MemoryRecord(
         text=text, fact_type=FactType.POI_FACT, subject="Kyoto",
-        intents=intents, confidence=0.7, lat=lat, lon=lon,
+        intents=intents, confidence=0.6, lat=lat, lon=lon,
         observed_at=days_ago(10),
         provenance=Provenance(source="wikivoyage", detail=WIKIVOYAGE)))
 
