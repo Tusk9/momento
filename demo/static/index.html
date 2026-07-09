@@ -6,9 +6,12 @@
 <style>
   body { margin:0; font-family:-apple-system,system-ui,sans-serif; display:grid;
          grid-template-columns: 1fr 380px; grid-template-rows: 52px 1fr 210px; height:100vh; }
-  header { grid-column:1/3; background:#1a1a2e; color:#fff; display:flex; align-items:center;
-           gap:14px; padding:0 16px; }
-  header h1 { font-size:18px; margin:0; } header .backend { opacity:.7; font-size:12px; }
+  header { grid-column:1/3; background:linear-gradient(135deg,#1a1a2e 0%,#16213e 60%,#0f3460 100%);
+           color:#fff; display:flex; align-items:center; gap:14px; padding:0 16px; }
+  header h1 { font-size:19px; margin:0; text-transform:uppercase; letter-spacing:6px;
+              font-weight:800; background:linear-gradient(90deg,#e94560,#ff8f6b);
+              -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+  header .tagline { opacity:.55; font-size:12px; font-style:italic; }
   header button { background:#e94560; color:#fff; border:0; padding:7px 12px; border-radius:6px;
                   cursor:pointer; font-size:13px; }
   header button.secondary { background:#444; }
@@ -35,7 +38,8 @@
 </head>
 <body>
 <header>
-  <h1>momento</h1><span class="backend" id="backend"></span>
+  <h1>momento</h1><span class="tagline">forgets on purpose</span>
+  <span class="backend" id="backend"></span>
   <span style="flex:1"></span>
   <button class="secondary" onclick="newSession()">New session</button>
   <button onclick="injectChange()">⚡ Inject fact change (pipeline)</button>
@@ -50,12 +54,13 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 const map = L.map('map').setView([35.005, 135.755], 13);
-L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-            {attribution:'© OpenStreetMap'}).addTo(map);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png',
+            {attribution:'© OpenStreetMap contributors © CARTO', maxZoom: 20}).addTo(map);
 let markers = [];
 const colors = {hot:'#e94560', warm:'#3273dc', cold:'#999'};
 
 async function refresh() {
+  try{
   const d = await (await fetch('/api/memories')).json();
   document.getElementById('backend').textContent = 'backend: ' + d.backend;
   markers.forEach(m => map.removeLayer(m)); markers = [];
@@ -82,6 +87,10 @@ async function refresh() {
     memsDiv.appendChild(el);
   }
   document.getElementById('visa').innerHTML = visaHtml;
+  } catch (err) {
+    document.getElementById('visa').innerHTML =
+      '<div class="visa changed">JS error: ' + err.message + '</div>';
+  }
 }
 
 function logAdd(cls, html) {
