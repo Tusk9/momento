@@ -78,8 +78,14 @@ def new_session():
 
 
 @app.post("/api/inject_visa_change")
+@app.post("/api/inject_visa_change")
 def inject():
     """Plays the data pipeline's role: a freshly re-scraped advisory arrives."""
+    # Idempotent: if the eVisa fact is already live, don't inject a duplicate.
+    for r in store.all():
+        if r.fact_type == FactType.VISA_RULE and "eVisa" in r.text and r.is_active:
+            return jsonify({"outcome": "already_applied",
+                            "caption": "Fact change already applied."})
     fresh = MemoryRecord(
         text="US citizens now require an approved eVisa before entering Japan; "
              "visa-free entry has ended.",
