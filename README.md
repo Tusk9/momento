@@ -98,6 +98,7 @@ python demo/server.py         # → http://localhost:5001
 
 # judged configuration: Qwen Cloud (put QWEN_API_KEY in .env — see .env.example)
 MODEL_BACKEND=qwen_cloud python demo/seed_demo.py
+MODEL_BACKEND=qwen_cloud python momento/pipeline/fetch_pois.py   # real OSM POIs via the reconciler
 MODEL_BACKEND=qwen_cloud python demo/server.py
 ```
 
@@ -117,14 +118,16 @@ the whole stack.
 
 ## Honest scope & production path
 
-- Demo memory is **seeded** (6 Kyoto POIs + 1 visa rule, provenance-tagged); the fact change
-  is **injected** to make the reconciliation beat deterministic on camera. The production
-  path is the `pipeline/` module fetching the same shapes from real sources (Wikivoyage/OSM
-  POIs, government advisories) through the *same* reconciler door.
+- Base demo memory is seeded; **additional Kyoto POIs are fetched live from
+  OpenStreetMap (Overpass API)** by `momento/pipeline/fetch_pois.py` and ingested
+  through the same reconciler as every other fact. The visa fact change is
+  injected to keep the reconciliation beat deterministic on camera; a production
+  build would re-scrape advisisories on a schedule through the same door.
 - The transition map is a hand-coded prior; `predict_next()` is the seam where a learned
   model drops in once real session data exists.
 - Known limitation: the reasoner may propose specifics (restaurant names) beyond stored
   memory; constraining recommendations to provenance-backed facts is pipeline-era work.
+
 
 ## Repo map
 
@@ -133,7 +136,9 @@ momento/
 ├── momento/
 │   ├── models/          # swappable LLM backend (Ollama ↔ Qwen Cloud)
 │   ├── intent/          # taxonomy (13 intents) · classifier · transition map
-│   ├── memory/          # schema · sqlite-vec store · scoring · prefetch (L1) · reconcile
+│   ├── memory/          # schema · sqlite-vec store · scoring · prefetch (L1) · 
+│   ├── pipeline/        # real data ingest: OSM Overpass POIs → reconciler
+reconcile
 │   └── agent.py         # per-turn orchestration (both loops + guarded ingest)
 ├── demo/                # Flask + Leaflet map demo (seed_demo.py · server.py)
 ├── test_*.py            # component + end-to-end tests
